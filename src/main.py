@@ -5,17 +5,15 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.auto_suggest import Suggestion
 from prompt_toolkit.validation import Validator, ValidationError
 
+api_url = "https://www.toptal.com/developers/gitignore/api"
+
 
 def main():
 
     # Define custom key bindings
     bindings = KeyBindings()
 
-    keywords = (
-        requests.get("https://www.toptal.com/developers/gitignore/api/list")
-        .text.replace("\n", ",")
-        .split(",")
-    )
+    keywords = requests.get(f"{api_url}/list").text.replace("\n", ",").split(",")
 
     session = PromptSession(
         complete_while_typing=True,
@@ -57,9 +55,7 @@ def main():
             return  # Exit on Ctrl+D
 
     print("Generating...")
-    response = requests.get(
-        f"https://www.toptal.com/developers/gitignore/api/{','.join(chosen_keywords)}"
-    )
+    response = requests.get(f"{api_url}/{','.join(chosen_keywords)}")
 
     with open(".gitignore", "w") as f:
         f.write(response.text)
