@@ -1,10 +1,15 @@
 import requests
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import FuzzyCompleter, WordCompleter
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.auto_suggest import Suggestion
+from prompt_toolkit.validation import Validator, ValidationError
 
 
 def main():
-    session = PromptSession()
+
+    # Define custom key bindings
+    bindings = KeyBindings()
 
     keywords = (
         requests.get("https://www.toptal.com/developers/gitignore/api/list")
@@ -12,21 +17,32 @@ def main():
         .split(",")
     )
 
+    session = PromptSession(
+        complete_while_typing=True,
+        completer=FuzzyCompleter(WordCompleter(keywords, ignore_case=True)),
+        validator=Validator.from_callable(
+            lambda text: text in keywords or text == "",
+            error_message="Invalid keyword. Please select from the completer.",
+            move_cursor_to_end=True,
+        ),
+    )
+
     chosen_keywords = []
 
-    # Create a completer with the keywords
-    keyword_completer = FuzzyCompleter(WordCompleter(keywords, ignore_case=True))
-
-    print("Please enter the languages and operating systems you will use.")
+    print(
+        "Please enter the languages and operating systems you will use. Enter to generate."
+    )
 
     while True:
         try:
-            # Prompt the user for input with the completer
-            user_input = session.prompt("> ", completer=keyword_completer)
+            # Prompt the user for input with the completer and custom key bindings
+            user_input = session.prompt(
+                "> ",
+                key_bindings=bindings,
+            )
 
             if user_input == "":
-                print("Confirm generation? (Y/n)")
-                confirm = session.prompt("> ")
+                confirm = input("Confirm generation? (Y/n): ")
 
                 if confirm == "y" or confirm == "" or confirm == "Y":
                     break
@@ -34,7 +50,7 @@ def main():
                     print("Exiting...")
                     return
             else:
-                chosen_keywords.append(user_input)
+                chosen_keywords.append(user_input)  # No need to append ", " here
         except KeyboardInterrupt:
             return  # Exit on Ctrl+C
         except EOFError:
